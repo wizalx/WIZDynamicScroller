@@ -15,8 +15,11 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (nonatomic) id <WIZDynamicScrollerDelegate> delegate;
 @property (nonatomic, readonly) NSInteger currentViewsIndex;
+@property (nonatomic) BOOL permanentDelete;
+
 -(void)setStartIndex:(NSInteger)startIndex;
 -(void)updateScroller;
+-(void)disableMove;
 
 @end
 

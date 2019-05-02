@@ -17,7 +17,7 @@
     float widthLRViews;
     float heightLRViews;
     float yLRViews;
-    
+
     NSInteger count;
     
     //animation property
@@ -26,8 +26,9 @@
     CGPoint startLocation;
     
     CGPoint firstTouchPoint;
-    
+
     NSInteger indexBeforeMoving;
+    BOOL moveDisabled;
 }
 
 @property (nonatomic) UIView *centerView;
@@ -36,7 +37,7 @@
 
 @property (nonatomic) NSInteger currentIndex;
 
-@property UIImageView *deleteBasket;
+@property UIButton *deleteBasket;
 
 @property WIZDynamicScrollerAnimator *animator;
 
@@ -69,6 +70,17 @@
     }
     
     return self;
+}
+
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
+{
+    CGPoint pointForTargetView = [self.deleteBasket convertPoint:point fromView:self];
+    
+    if (CGRectContainsPoint(self.deleteBasket.bounds, pointForTargetView)) {
+        return [self.deleteBasket hitTest:pointForTargetView withEvent:event];
+    }
+    
+    return [super hitTest:point withEvent:event];
 }
 
 -(void)customInit
@@ -104,9 +116,11 @@
     self.animator = [[WIZDynamicScrollerAnimator alloc] initWithContentFrame:self.frame];
     self.animator.delegate = self;
     
-    if (_delegate) {
+    if (_delegate)
         [self setDelegate:_delegate];
-    }
+    
+    if (self.permanentDelete)
+        [self createDeleteBasket];
 }
 
 -(void)setDelegate:(id<WIZDynamicScrollerDelegate>)delegate
@@ -187,20 +201,20 @@
 
 -(void)rightGesture:(UIGestureRecognizer*)gr
 {
-    if (!longPressTapped && self.currentIndex != 0) {
-        UIView* phantomView = nil;
-        if (self.currentIndex-1 > 0) {
-            phantomView = [_delegate dynamicScroller:self viewForItemAtIndex:self.currentIndex-2];
-            [self addSubview:phantomView];
-        }
-        [self.animator rotateToLeftWithPhantom:phantomView completion:^(BOOL finished) {
-            self.currentIndex--;
-            if ([self.delegate respondsToSelector:@selector(dynamicScroller:didShowItemAtIndex:)]) {
-                [self.delegate dynamicScroller:self didShowItemAtIndex:self.currentIndex];
-            }
-        }];
-        
-    }
+     if (!longPressTapped && self.currentIndex != 0) {
+         UIView* phantomView = nil;
+         if (self.currentIndex-1 > 0) {
+             phantomView = [_delegate dynamicScroller:self viewForItemAtIndex:self.currentIndex-2];
+             [self addSubview:phantomView];
+         }
+         [self.animator rotateToLeftWithPhantom:phantomView completion:^(BOOL finished) {
+             self.currentIndex--;
+             if ([self.delegate respondsToSelector:@selector(dynamicScroller:didShowItemAtIndex:)]) {
+                 [self.delegate dynamicScroller:self didShowItemAtIndex:self.currentIndex];
+             }
+         }];
+         
+     }
 }
 
 -(void)leftGesture:(UIGestureRecognizer*)gr
@@ -225,6 +239,9 @@
 
 -(void)longGesture:(UILongPressGestureRecognizer*)gr
 {
+    if (moveDisabled)
+        return;
+    
     if (gr.state == UIGestureRecognizerStateBegan) {
         if (!longPressTapped) {
             [self shakeAnimation];
@@ -234,9 +251,8 @@
             _centerView.multipleTouchEnabled = YES;
             longPressTapped = YES;
             
-            self.deleteBasket = [[UIImageView alloc] initWithFrame:CGRectMake(self.bounds.size.width/2 - 25, self.bounds.origin.y - 65, 50, 50)];
-            [self.deleteBasket setImage:[UIImage imageNamed:@"deleteBasket.png"]];
-            [self addSubview:self.deleteBasket];
+            if (!self.permanentDelete)
+                [self createDeleteBasket];
             
         } else if (!moving) {
             [_centerView.layer removeAllAnimations];
@@ -245,16 +261,19 @@
             
             longPressTapped = NO;
             
-            [self.deleteBasket removeFromSuperview];
+            if (!self.permanentDelete)
+                [self.deleteBasket removeFromSuperview];
         }
-        
+       
     }
 }
+
+
 
 -(void)shakeAnimation
 {
     CABasicAnimation *shake = [CABasicAnimation animationWithKeyPath:@"transform.rotation.z"];
-    
+
     [shake setDuration:2];
     [shake setRepeatCount:100];
     [shake setAutoreverses:YES];
@@ -265,22 +284,20 @@
 
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
+    NSLog(@"bgn");
     if (longPressTapped) {
         CGPoint pt = [[touches anyObject]locationInView:_centerView];
         startLocation = pt;
         
         UITouch* bTouch = [touches anyObject];
         firstTouchPoint = [bTouch locationInView:self];
-        //        if ([bTouch.view isEqual:_centerView] || [bTouch.view isDescendantOfView:_centerView])
-        //        {
         indexBeforeMoving = _currentIndex;
-        //        }
     }
-    
 }
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
+    NSLog(@"end");
     if (longPressTapped) {
         UITouch* mTouch = [touches anyObject];
         CGPoint cp = [mTouch locationInView:self];
@@ -318,14 +335,17 @@
         } else if (cp.x < _leftView.frame.origin.x+_leftView.frame.size.width && _leftView)
         {
             [self movedLeftAnimation];
-        }
+        } 
     }
 }
 
 - (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(nullable UIEvent *)event
 {
+    NSLog(@"cncl");
     [self touchesEnded:touches withEvent:event];
 }
+
+#pragma mark - move
 
 -(void)movedRightAnimation
 {
@@ -361,8 +381,23 @@
     }];
 }
 
+#pragma mark - delete
+
+-(void)createDeleteBasket
+{
+    self.deleteBasket = [[UIButton alloc] initWithFrame:CGRectMake(self.bounds.size.width/2 - 25, self.bounds.origin.y - 65, 50, 50)];
+    [self.deleteBasket setTitle:@"" forState:UIControlStateNormal];
+    [self.deleteBasket setBackgroundImage:[UIImage imageNamed:@"deleteBasket.png"] forState:UIControlStateNormal];
+    if (self.permanentDelete) {
+        [self.deleteBasket addTarget:self action:@selector(deleteAnimation) forControlEvents:UIControlEventTouchUpInside];
+    }
+    [self addSubview:self.deleteBasket];
+
+}
+
 -(void)deleteAnimation
 {
+    NSLog(@"dltAnm");
     kDirection directionAnimation = kOnRight;
     
     //create phantom view
@@ -374,22 +409,30 @@
     }
     
     if (self.currentIndex == count-1) {
-        phantomView = [_delegate dynamicScroller:self viewForItemAtIndex:self.currentIndex-2];
-        [self addSubview:phantomView];
+        if (self.currentIndex-2 > 0) {
+            phantomView = [_delegate dynamicScroller:self viewForItemAtIndex:self.currentIndex-2];
+            [self addSubview:phantomView];
+        }
         directionAnimation = kOnLeft;
     }
     
     [self.animator deleteAnimationToPoint:self.deleteBasket.center phantomView:phantomView direction:directionAnimation completion:^(BOOL finished) {
-        dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW,
-                                                (int64_t)(0.5 * NSEC_PER_SEC));
-        dispatch_after(popTime, dispatch_get_main_queue(), ^(void) {
-            [self shakeAnimation];
-        });
+        
+        if (!self.permanentDelete) {
+            dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW,
+                                                    (int64_t)(0.5 * NSEC_PER_SEC));
+            dispatch_after(popTime, dispatch_get_main_queue(), ^(void) {
+                [self shakeAnimation];
+            });
+        }
+        
         if ([self.delegate respondsToSelector:@selector(dynamicScroller:deleteItemArIndex:)])
             [self.delegate dynamicScroller:self deleteItemArIndex:self.currentIndex];
         
-        if (self.currentIndex == self->count-1)
+        if (self.currentIndex == self->count-1 && self.currentIndex != 0)
+        {
             self.currentIndex--;
+        }
     }];
     
 }
@@ -407,6 +450,11 @@
 -(NSInteger)currentViewsIndex
 {
     return self.currentIndex;
+}
+
+-(void)disableMove
+{
+    moveDisabled = YES;
 }
 
 #pragma mark - WIZDSAnimatorDelegate

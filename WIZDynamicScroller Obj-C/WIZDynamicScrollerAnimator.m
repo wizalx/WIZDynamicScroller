@@ -92,7 +92,8 @@
 {
     if (self.animationNow)
     {
-        NSLog(@"return");
+        if (phantomView)
+            [phantomView removeFromSuperview];
         return;
     }
     
@@ -141,7 +142,8 @@
 {
     if (self.animationNow)
     {
-        NSLog(@"return");
+        if (phantomView)
+            [phantomView removeFromSuperview];
         return;
     }
     
@@ -189,7 +191,11 @@
 -(void)moveToLeftWithPhantom:(UIView*)phantomView completion:(void (^)(BOOL finished))completion
 {
     if (self.animationNow)
+    {
+        if (phantomView)
+            [phantomView removeFromSuperview];
         return;
+    }
     
     self.animationNow = YES;
     
@@ -234,7 +240,11 @@
 -(void)moveToRightWithPhantom:(UIView*)phantomView completion:(void (^)(BOOL finished))completion
 {
     if (self.animationNow)
+    {
+        if (phantomView)
+            [phantomView removeFromSuperview];
         return;
+    }
     
     self.animationNow = YES;
     
