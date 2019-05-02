@@ -43,4 +43,4 @@ It return a deleted view's index
 - *setStartIndex* - method set a starting index
 - *updateScroller* - method reload a WIZDynamicScroller
 - *permanentDelete* - set YES, if you want to stay the delete icon as a button constantly
-- *disable move* - call the method, if you want disable the moving functionality
+- *disableMove* - call the method, if you want disable the moving functionality
