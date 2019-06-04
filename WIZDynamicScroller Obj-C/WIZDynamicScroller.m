@@ -29,6 +29,9 @@
 
     NSInteger indexBeforeMoving;
     BOOL moveDisabled;
+    
+    float correctionX;
+    float correctionY;
 }
 
 @property (nonatomic) UIView *centerView;
@@ -284,22 +287,27 @@
 
 -(void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    NSLog(@"bgn");
     if (longPressTapped) {
         CGPoint pt = [[touches anyObject]locationInView:_centerView];
         startLocation = pt;
-        
         UITouch* bTouch = [touches anyObject];
+
+        
         firstTouchPoint = [bTouch locationInView:self];
+        
+        
+        correctionX = _centerView.center.x - firstTouchPoint.x;
+        correctionY = _centerView.center.y - firstTouchPoint.y;
+        
         indexBeforeMoving = _currentIndex;
     }
 }
 
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    NSLog(@"end");
     if (longPressTapped) {
         UITouch* mTouch = [touches anyObject];
+        
         CGPoint cp = [mTouch locationInView:self];
         if (cp.x > _deleteBasket.frame.origin.x && cp.x < _deleteBasket.frame.origin.x+_deleteBasket.frame.size.width && cp.y > _deleteBasket.frame.origin.y && cp.y < _deleteBasket.frame.origin.y + _deleteBasket.frame.size.height)
         {
@@ -328,8 +336,19 @@
     if (longPressTapped) {
         moving = YES;
         UITouch* mTouch = [touches anyObject];
+        
+        if (mTouch.gestureRecognizers.count != 0) {
+            UIGestureRecognizer * tmpG = [mTouch.gestureRecognizers objectAtIndex:0];
+            tmpG.cancelsTouchesInView = NO;
+             if (mTouch.gestureRecognizers.count > 1) {
+                UIGestureRecognizer * tmpG = [mTouch.gestureRecognizers objectAtIndex:1];
+                tmpG.cancelsTouchesInView = NO;
+             }
+        }
+        
+        
         CGPoint cp = [mTouch locationInView:self];
-        [_centerView setCenter:CGPointMake(cp.x, cp.y)];
+        [_centerView setCenter:CGPointMake(cp.x + correctionX, cp.y + correctionY)];
         if (cp.x >= _rightView.frame.origin.x && _rightView) {
             [self movedRightAnimation];
         } else if (cp.x < _leftView.frame.origin.x+_leftView.frame.size.width && _leftView)
@@ -341,7 +360,6 @@
 
 - (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(nullable UIEvent *)event
 {
-    NSLog(@"cncl");
     [self touchesEnded:touches withEvent:event];
 }
 
@@ -469,6 +487,10 @@
     _leftView = views.leftView;
     _centerView = views.centerView;
     _rightView = views.rightView;
+    
+    _leftView.layer.zPosition = 100;
+    _rightView.layer.zPosition = 100;
+    _centerView.layer.zPosition = 1000;
 }
 
 @end

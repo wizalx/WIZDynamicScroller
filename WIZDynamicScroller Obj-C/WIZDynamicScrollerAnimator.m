@@ -38,6 +38,8 @@
 
 @implementation WIZDynamicScrollerAnimator
 
+float const durationTime = 0.25;
+
 -(id)initWithContentFrame:(CGRect)frame
 {
     self = [super init];
@@ -108,7 +110,7 @@
     __block UIView *leftView = views.leftView;
     __block UIView *centerView = views.centerView;
     __block UIView *rightView = views.rightView;
-    [UIView animateWithDuration:0.5 animations:^{
+    [UIView animateWithDuration:durationTime animations:^{
         leftView.frame = [self phantomLeftRect];
         centerView.transform = CGAffineTransformScale(centerView.transform, 0.7, 0.7);
         centerView.frame = [self calculateLeftRect];
@@ -158,7 +160,7 @@
     __block UIView *leftView = views.leftView;
     __block UIView *centerView = views.centerView;
     __block UIView *rightView = views.rightView;
-    [UIView animateWithDuration:0.5 animations:^{
+    [UIView animateWithDuration:durationTime animations:^{
         rightView.frame = [self phantomRightRect];
         centerView.transform = CGAffineTransformScale(centerView.transform, 0.7, 0.7);
         centerView.frame = [self calculateRightRect];
@@ -202,6 +204,7 @@
     if (phantomView) {
         phantomView.transform = CGAffineTransformScale(phantomView.transform, 0.7, 0.7);
         phantomView.frame = [self phantomLeftRect];
+        phantomView.layer.zPosition = 100;
     }
     
     WIZViewsObjects *views = [_delegate leftCenterRightViewsForAnimationsForWIZDSAnimator];
@@ -209,7 +212,7 @@
     __block UIView *centerView = views.centerView;
     __block UIView *rightView = views.rightView;
     
-    [UIView animateWithDuration:0.3 animations:^{
+    [UIView animateWithDuration:durationTime animations:^{
         //go animation
         rightView.frame = [self phantomRightRect];
         leftView.frame = [self calculateRightRect];
@@ -226,6 +229,10 @@
             leftView = phantomView;
             leftView.alpha = 0.60;
             rightView.alpha = 0.60;
+            
+            leftView.layer.zPosition = 100;
+            rightView.layer.zPosition = 100;
+            centerView.layer.zPosition = 1000;
             
             [self.delegate WIZDSAnimatorCurrentViews:[[WIZViewsObjects alloc] initWithLeftView:leftView centerView:centerView rightView:rightView]];
             
@@ -251,6 +258,7 @@
     if (phantomView) {
         phantomView.transform = CGAffineTransformScale(phantomView.transform, 0.7, 0.7);
         phantomView.frame = [self phantomRightRect];
+        phantomView.layer.zPosition = 100;
     }
     
     WIZViewsObjects *views = [_delegate leftCenterRightViewsForAnimationsForWIZDSAnimator];
@@ -258,7 +266,7 @@
     __block UIView *centerView = views.centerView;
     __block UIView *rightView = views.rightView;
     
-    [UIView animateWithDuration:0.3 animations:^{
+    [UIView animateWithDuration:durationTime animations:^{
         //go animation
         rightView.frame = [self calculateLeftRect];
         leftView.frame = [self phantomLeftRect];
@@ -275,6 +283,9 @@
             rightView = phantomView;
             leftView.alpha = 0.60;
             rightView.alpha = 0.60;
+            leftView.layer.zPosition = 100;
+            rightView.layer.zPosition = 100;
+            centerView.layer.zPosition = 1000;
             
             [self.delegate WIZDSAnimatorCurrentViews:[[WIZViewsObjects alloc] initWithLeftView:leftView centerView:centerView rightView:rightView]];
             
@@ -299,7 +310,7 @@
     __block UIView *centerView = views.centerView;
     __block UIView *rightView = views.rightView;
     
-    [UIView animateWithDuration:0.3 animations:^{
+    [UIView animateWithDuration:durationTime animations:^{
         centerView.frame = CGRectMake(point.x, point.y, 1, 1);
         if (direction == kOnRight) {
             rightView.transform = CGAffineTransformScale(rightView.transform, 1.4, 1.4);
